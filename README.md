@@ -84,6 +84,7 @@ python inference.py
 ## Model Training
 
 The model uses MobileNetV2 architecture fine-tuned on a custom dataset of waste images categorized into 4 classes.
+Refer to `tinytrash.ipynb` for more information.
 
 ## Categories
 
