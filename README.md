@@ -4,6 +4,35 @@ Waste classification system using computer vision and PyTorch. Classifies trash 
 
 ---
 
+## Dataset Collection - "Others" Category
+
+The "others" category helps the model distinguish waste from non-waste items, reducing false positives.
+
+### What to Include
+
+Capture ~150 diverse photos of:
+- Random household items (books, phones, remote controls, cups)
+- Empty backgrounds (tables, walls, floors)
+- Hands and arms (they appear during real usage)
+- Food items (fruits, vegetables, packaged food)
+- Furniture and electronics
+
+### Using the Photo Capture Tool
+```bash
+# Install requirements
+pip install opencv-python
+
+# Run the capture script
+python capture_photos.py
+```
+
+**Controls:**
+- `SPACE` - Take photo
+- `Q` - Quit
+
+Photos are saved to `others` folder. After capturing, zip the folder and upload to your google drive
+
+---
 ## Features
 
 - Real-time waste classification using webcam
