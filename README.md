@@ -30,7 +30,7 @@ python capture_photos.py
 - `SPACE` - Take photo
 - `Q` - Quit
 
-Photos are saved to `others` folder. After capturing, zip the folder and upload to your google drive
+Photos are saved to `others` folder. After capturing, zip the folder and upload to the google drive
 
 ---
 ## Features
@@ -54,8 +54,11 @@ Photos are saved to `others` folder. After capturing, zip the folder and upload 
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone repository
-git clone https://github.com/yourusername/tinytrash.git
-cd tinytrash
+git clone https://github.com/Okikulo/TinyTrash.git
+cd TinyTrash
+
+# Create virtual env (optional)
+uv venv
 
 # Install dependencies
 uv sync
