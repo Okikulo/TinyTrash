@@ -2,6 +2,8 @@
 
 Waste classification system using computer vision and PyTorch. Classifies trash into 4 categories: glass, metal, paper, and plastic.
 
+---
+
 ## Features
 
 - Real-time waste classification using webcam
@@ -18,8 +20,6 @@ Waste classification system using computer vision and PyTorch. Classifies trash 
 
 > *Note:* The `requirements.txt` and `uv.lock` dependecies are only for the `inference.py` script.
 
-### Using uv (recommended)
-
 ```bash
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -33,13 +33,6 @@ uv sync
 
 # Run inference
 uv run python inference.py
-```
-
-### Using pip
-
-```bash
-pip install torch torchvision opencv-python pillow
-python inference.py
 ```
 
 ## Usage
@@ -69,6 +62,8 @@ The model uses MobileNetV2 architecture fine-tuned on a custom dataset of waste 
 - ⚪ **Metal** - Aluminum cans, metal containers
 - 🟡 **Paper** - Cardboard, paper packaging
 - 🔴 **Plastic** - Plastic bottles, containers
+
+---
 
 ## Acknowledgments
 
