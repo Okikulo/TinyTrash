@@ -1,0 +1,6 @@
+/screenshots/**
+/midterm_demo/**
+/docs/**
+.python-version
+/.mypy_cache/**
+/dataset/**
