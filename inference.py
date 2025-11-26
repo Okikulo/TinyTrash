@@ -51,6 +51,14 @@ print("Loading model...")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
+# Print hardware info
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+    print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+else:
+    print("GPU: Not available - using CPU only")
+    print("Note: Inference will be slower on CPU")
+
 # Create model architecture (same as training)
 model = models.mobilenet_v2(pretrained=False)
 model.classifier[1] = nn.Linear(model.last_channel, len(CATEGORIES))
