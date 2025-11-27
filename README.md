@@ -60,6 +60,9 @@ cd TinyTrash
 # Create virtual env (optional)
 uv venv
 
+# Enter the virtual venv (if created)
+source .venv/bin/activate
+
 # Install dependencies
 uv sync
 
@@ -100,4 +103,4 @@ Refer to `tinytrash.ipynb` for more information.
 
 ## Acknowledgments
 
-Developed as part of Embedded Systems course at National Taiwan University of Science and Technology (NTUST).
+Developed as part of Embedded Systems Design course at National Taiwan University of Science and Technology (NTUST).
