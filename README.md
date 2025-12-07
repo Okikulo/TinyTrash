@@ -47,8 +47,6 @@ Photos are saved to `others` folder. After capturing, zip the folder and upload 
 
 ## Installation
 
-> *Note:* The `requirements.txt` and `uv.lock` dependecies are only for the `inference.py` script.
-
 ```bash
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
