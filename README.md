@@ -19,8 +19,7 @@ Capture ~150 diverse photos of:
 
 ### Set the output path
 ```python
-OUTPUT_FOLDER = "/path/to/your/dataset"
-  
+OUTPUT_FOLDER = "/path/to/your/dataset"  
 ```
 
 
