@@ -81,21 +81,25 @@ For `inference_capture.py`
 
 ## Dataset Collection  
 
-The `capture_photos.py` script can help you collect data easily to add or make your own dataset. The scripts runs in Windows, macOS and Linux without problems.
+The `capture_photos.py` script can help you collect data easily to add or make your own dataset. The script runs in Windows, macOS and Linux without problems.
 
 ### Using the Photo Capture Tool
 
 ```bash
-# Run the capture script
-python capture_photos.py
+# Run the capture script, category argument is positional
+python capture_photos.py <category>
 ```
-Photos are saved to `others` folder. After capturing, zip the folder and upload to the google drive
+Photos are saved in the corresponding category folder.
 
+```bash
+# For more information
+python capture_photos.py --help
+```
 ### Controls
 - `SPACE` - Take photo
 - `Q` - Quit
 
-> **Work in Progress:** The "others" category helps the model distinguish waste from non-waste items, reducing false positives. This will remove after the final demo
+> **Work in Progress:** The "others" category helps the model distinguish waste from non-waste items, reducing false positives. This will be removed after the final demo
 
 ### What to Include
 
