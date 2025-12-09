@@ -24,7 +24,7 @@ from datetime import datetime
 # ============================================================================
 
 # Output folder (will be created if doesn't exist)
-OUTPUT_FOLDER = "others"
+OUTPUT_FOLDER = "dataset/metal"
 
 # Image resolution
 CAMERA_WIDTH = 1280
