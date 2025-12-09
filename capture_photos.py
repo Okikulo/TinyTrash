@@ -23,8 +23,11 @@ from datetime import datetime
 # CONFIGURATION
 # ============================================================================
 
+# Category
+CATEGORY = "paper"
+
 # Output folder (will be created if doesn't exist)
-OUTPUT_FOLDER = "dataset/metal"
+OUTPUT_FOLDER = f"dataset/{CATEGORY}"
 
 # Image resolution
 CAMERA_WIDTH = 1280
@@ -154,7 +157,7 @@ while True:
         
         # Generate filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{OUTPUT_FOLDER}/others_{timestamp}_{photo_count:04d}.jpg"
+        filename = f"{OUTPUT_FOLDER}/{CATEGORY}_{timestamp}_{photo_count:04d}.jpg"
         
         # Resize frame if needed
         if SAVE_WIDTH != actual_width or SAVE_HEIGHT != actual_height:
@@ -189,6 +192,6 @@ print(f"Photos saved to: ./{OUTPUT_FOLDER}/")
 print("\nNext steps:")
 print(f"  1. Review photos in {OUTPUT_FOLDER}/ folder")
 print("  2. Delete any blurry or bad photos")
-print("  3. Zip the folder: {OUTPUT_FOLDER}.zip")
+print(f"  3. Zip the folder: {CATEGORY}.zip")
 print("  4. Upload to Google Drive for training")
 print("="*60)

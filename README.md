@@ -17,9 +17,9 @@ Capture ~150 diverse photos of:
 - Food items (fruits, vegetables, packaged food)
 - Furniture and electronics
 
-### Set the output path
+### Set the category you are going to collect
 ```python
-OUTPUT_FOLDER = "/path/to/your/dataset"  
+CATEGORY = "category"  
 ```
 
 
