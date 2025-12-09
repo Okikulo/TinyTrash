@@ -4,9 +4,9 @@ Waste classification system using computer vision and PyTorch. Classifies trash 
 
 ---
 
-## Dataset Collection - "Others" Category
+## Dataset Collection  
 
-The "others" category helps the model distinguish waste from non-waste items, reducing false positives.
+**Work in Progress:** The "others" category helps the model distinguish waste from non-waste items, reducing false positives.
 
 ### What to Include
 
@@ -16,6 +16,13 @@ Capture ~150 diverse photos of:
 - Hands and arms (they appear during real usage)
 - Food items (fruits, vegetables, packaged food)
 - Furniture and electronics
+
+### Set the output path
+```python
+OUTPUT_FOLDER = "/path/to/your/dataset"
+  
+```
+
 
 ### Using the Photo Capture Tool
 ```bash
