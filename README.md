@@ -96,6 +96,7 @@ Refer to `tinytrash.ipynb` for more information.
 - ⚪ **Metal** - Aluminum cans, metal containers
 - 🟡 **Paper** - Cardboard, paper packaging
 - 🔴 **Plastic** - Plastic bottles, containers
+- 🟤 **Others** - Anything that does not fall in the previous four categories (work in progress)
 
 ---
 
