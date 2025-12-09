@@ -3,5 +3,11 @@
 /docs/**
 .python-version
 /.mypy_cache/**
-/dataset/**
+/dataset/glass/**
+/dataset/metal/**
+/dataset/paper/**
+/dataset/plastic/**
+/dataset/others/**
+/dataset/sample/**
+/dataset/zip/**
 /others/**

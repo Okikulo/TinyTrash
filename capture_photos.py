@@ -1,33 +1,28 @@
-"""
-TinyTrash Dataset Photo Capture Tool
-=====================================
-Easy photo capture for creating "others" category dataset.
-Works on Windows, Linux, and macOS.
-
-Requirements:
-    pip install opencv-python
-
-Usage:
-    python capture_photos.py
-    
-Controls:
-    SPACE - Take photo
-    Q     - Quit
-"""
-
 import cv2
 import os
 from datetime import datetime
+import argparse
+
+# ============================================================================
+# COMMAND LINE ARGUMENTS
+# ============================================================================
+
+parser = argparse.ArgumentParser(description='TinyTrash Dataset Photo Capture Tool')
+parser.add_argument('category', type=str, 
+                    help='Category name (e.g., glass, metal, paper, plastic, others)')
+parser.add_argument('--output-dir', type=str, default='dataset',
+                    help='Output directory (default: dataset)')
+args = parser.parse_args()
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
 
-# Category
-CATEGORY = "paper"
+# Category from command line
+CATEGORY = args.category
 
 # Output folder (will be created if doesn't exist)
-OUTPUT_FOLDER = f"dataset/{CATEGORY}"
+OUTPUT_FOLDER = f"{args.output_dir}/{CATEGORY}"
 
 # Image resolution
 CAMERA_WIDTH = 1280
@@ -47,17 +42,17 @@ photo_count = 0
 print("="*60)
 print("TinyTrash Dataset Photo Capture Tool")
 print("="*60)
-print(f"\nPhotos will be saved to: ./{OUTPUT_FOLDER}/")
+print(f"\nCategory: {CATEGORY}")
+print(f"Photos will be saved to: ./{OUTPUT_FOLDER}/")
 print("\nControls:")
 print("  SPACE - Take photo")
 print("  Q     - Quit")
-print("\nTips for 'others' category:")
-print("  - Take photos of random household items")
-print("  - Include books, phones, clothes, furniture")
-print("  - Take photos of empty backgrounds (tables, walls)")
-print("  - Include your hands/arms (they appear in real usage)")
-print("  - Capture food items and packaging")
-print("  - Aim for 100-200 diverse photos")
+print("\nTips for good photos:")
+print("  - Vary angles and distances")
+print("  - Use different lighting conditions")
+print("  - Include different backgrounds")
+print("  - Hold items naturally (hands visible is OK)")
+print("  - Aim for 50-150 photos per category")
 print("="*60 + "\n")
 
 # Create output folder if it doesn't exist
@@ -66,7 +61,7 @@ if not os.path.exists(OUTPUT_FOLDER):
     print(f"✓ Created folder: {OUTPUT_FOLDER}/")
 else:
     # Count existing photos
-    existing_photos = [f for f in os.listdir(OUTPUT_FOLDER) if f.endswith('.jpg')]
+    existing_photos = [f for f in os.listdir(OUTPUT_FOLDER) if f.endswith(('.jpg', '.jpeg'))]
     photo_count = len(existing_photos)
     print(f"✓ Found {photo_count} existing photos in {OUTPUT_FOLDER}/")
 
