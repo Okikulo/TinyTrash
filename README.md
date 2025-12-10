@@ -6,7 +6,7 @@ Waste classification system using computer vision and PyTorch. Classifies trash 
 
 ## Model Training
 
-The model uses MobileNetV2 architecture fine-tuned on a custom dataset of waste images categorized into 5 classes.
+The model uses MobileNetV2 architecture fine-tuned on a custom dataset of waste images categorized into 4 or 5 classes.
 Refer to `tinytrash.ipynb` for more information.
 
 ## Categories

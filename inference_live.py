@@ -34,7 +34,7 @@ args = parser.parse_args()
 # ============================================================================
 
 # Path to your trained model (update this!)
-MODEL_PATH = 'tinytrash_model.pth'
+MODEL_PATH = 'models/tinytrash_model_4.pth'
 
 # Class names (in alphabetical order - same as ImageFolder)
 CATEGORIES = ['glass', 'metal', 'paper', 'plastic']
