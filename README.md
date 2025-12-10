@@ -30,6 +30,7 @@ Refer to `tinytrash.ipynb` for more information.
 
 - Python 3.8+
 - Webcam
+- `requirements.txt`
 
 ## Installation
 
@@ -52,32 +53,63 @@ uv sync
 ```
 ## Usage
 
-### Inference
-
-1. Place your trained model file (`tinytrash_model.pth`) in the project directory
-2. Run the inference script:
-
+#### Live Mode (`inference_live.py`)
+Continuous real-time classification with visual overlay.
 ```bash
-# For live, video-like inference
 python inference_live.py
 
-# For inference in a captured photo
-python inference_capture.py
+# With optional Wio Terminal display
+python inference_live.py --serial --port COM3  # Windows
+python inference_live.py --serial --port /dev/ttyACM0  # Linux
 ```
 
-3. Point your webcam at waste items to classify them
+**Features:**
+- Real-time classification
+- FPS counter
+- All class probabilities displayed
+- Screenshots saved to `screenshots/` folder
+
+#### Capture Mode (`inference_capture.py`)
+Capture and classify individual photos on demand.
+```bash
+python inference_capture.py
+
+# With optional Wio Terminal display
+python inference_capture.py --serial --port COM3
+```
+
+**Features:**
+- Clean camera preview
+- Capture on keypress
+- Selective saving by category
+- Images organized in `captures/{category}/` folders
+- Results in separate window
 
 ### Controls
 
-For `inference_live.py`
-- `q` - Quit
-- `p` - Pause/unpause
+**Live Mode (`inference_live.py`):**
+- `p` - Pause/unpause inference
 - `s` - Save screenshot
+- `q` - Quit
 
-For `inference_capture.py`
-- `c` - Capture and classify
+**Capture Mode (`inference_capture.py`):**
+- `c` - Capture photo and classify
+- `s` - Save current classification
 - `q` - Quit
-- `s` - Save screenshot
+
+### Command-Line Options
+
+Both scripts support optional Wio Terminal communication:
+```bash
+--serial              # Enable serial communication
+--port PORT           # Serial port (e.g., COM3, /dev/ttyACM0)
+--baudrate BAUDRATE   # Serial baudrate (default: 115200)
+```
+
+**Example:**
+```bash
+python inference_capture.py --serial --port COM3 --baudrate 115200
+```
 
 ## Dataset Collection  
 
@@ -87,11 +119,11 @@ The `capture_photos.py` script can help you collect data easily to add or make y
 
 ```bash
 # Run the capture script, category argument is positional
-python capture_photos.py <category>
-```
-Photos are saved in the corresponding category folder.
+python capture_photos.py category
 
-```bash
+# Example
+python capture_photos.py glass
+
 # For more information
 python capture_photos.py --help
 ```
