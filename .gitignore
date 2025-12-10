@@ -2,7 +2,6 @@
 /midterm_demo/**
 /final_demo/**
 /docs/**
-.python-version
 /.mypy_cache/**
 /dataset/glass/**
 /dataset/metal/**
@@ -12,4 +11,5 @@
 /dataset/sample/**
 /dataset/zip/**
 /others/**
+/captures/**
 TODO.md
