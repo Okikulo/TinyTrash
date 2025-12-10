@@ -1,5 +1,6 @@
 /screenshots/**
 /midterm_demo/**
+/final_demo/**
 /docs/**
 .python-version
 /.mypy_cache/**
@@ -11,3 +12,4 @@
 /dataset/sample/**
 /dataset/zip/**
 /others/**
+TODO.md

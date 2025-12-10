@@ -6,6 +6,28 @@ import cv2
 import numpy as np
 from PIL import Image
 import time
+import os
+import argparse
+
+# Try to import pyserial (optional for Wio Terminal communication)
+try:
+    import serial
+    SERIAL_AVAILABLE = True
+except ImportError:
+    SERIAL_AVAILABLE = False
+
+# ============================================================================
+# COMMAND LINE ARGUMENTS
+# ============================================================================
+
+parser = argparse.ArgumentParser(description='TinyTrash Inference - Live Mode')
+parser.add_argument('--serial', action='store_true', 
+                    help='Enable serial communication with Wio Terminal')
+parser.add_argument('--port', type=str, default=None,
+                    help='Serial port (e.g., COM3 on Windows, /dev/ttyACM0 on Linux)')
+parser.add_argument('--baudrate', type=int, default=115200,
+                    help='Serial baudrate (default: 115200)')
+args = parser.parse_args()
 
 # ============================================================================
 # CONFIGURATION
@@ -30,6 +52,9 @@ CONFIDENCE_THRESHOLD = 0.7  # Only show predictions above this confidence
 
 # Image size (must match training)
 IMG_SIZE = 224
+
+# Create output directory for screenshots
+os.makedirs('screenshots', exist_ok=True)
 
 # ============================================================================
 # LOAD MODEL
@@ -120,18 +145,77 @@ def predict_image(frame):
     return category_idx, category_name, conf
 
 # ============================================================================
+# SERIAL COMMUNICATION
+# ============================================================================
+
+def init_serial(port, baudrate):
+    """Initialize serial connection to Wio Terminal"""
+    if not SERIAL_AVAILABLE:
+        print("✗ pyserial not installed!")
+        print("  Install with: pip install pyserial")
+        print("  Or: python3 -m pip install pyserial")
+        return None
+    
+    if port is None:
+        print("✗ No serial port specified. Use --port argument.")
+        return None
+    
+    try:
+        ser = serial.Serial(port, baudrate, timeout=1)
+        time.sleep(2)  # Wait for Arduino to reset
+        print(f"✓ Serial connection established: {port} @ {baudrate} baud")
+        return ser
+    except serial.SerialException as e:
+        print(f"✗ Failed to open serial port {port}: {e}")
+        print("  Continuing without serial communication...")
+        return None
+    except Exception as e:
+        print(f"✗ Serial error: {e}")
+        return None
+
+
+def send_to_wio(ser, category, confidence):
+    """
+    Send classification result to Wio Terminal
+    Protocol: "CATEGORY:CONFIDENCE\n"
+    """
+    if ser is None or not ser.is_open:
+        return
+    
+    try:
+        message = f"{category.upper()}:{confidence*100:.1f}\n"
+        ser.write(message.encode('utf-8'))
+        ser.flush()
+    except Exception as e:
+        pass  # Silent fail in live mode to avoid spam
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 
 def main():
     print("\n" + "="*60)
-    print("TinyTrash Inference - Webcam Test")
+    print("TinyTrash Inference - Live Mode")
     print("="*60)
     print("Controls:")
     print("  'q' - Quit")
     print("  'p' - Pause/unpause")
     print("  's' - Save screenshot")
+    
+    # Show serial status
+    if args.serial:
+        print(f"\nSerial: ENABLED")
+        print(f"  Port: {args.port if args.port else 'Not specified'}")
+        print(f"  Baudrate: {args.baudrate}")
+    else:
+        print(f"\nSerial: DISABLED (use --serial to enable)")
+    
     print("="*60 + "\n")
+    
+    # Initialize serial connection if requested
+    ser = None
+    if args.serial:
+        ser = init_serial(args.port, args.baudrate)
     
     # Open webcam
     cap = cv2.VideoCapture(0)
@@ -183,6 +267,10 @@ def main():
                 last_confidence = confidence.item()
                 last_prediction = CATEGORIES[category_idx]
                 last_probabilities = probabilities  # Store for later use
+                
+                # Send to Wio Terminal if enabled
+                if ser:
+                    send_to_wio(ser, last_prediction, last_confidence)
             
             # FPS calculation
             fps_counter += 1
@@ -286,6 +374,11 @@ def main():
     # Cleanup
     cap.release()
     cv2.destroyAllWindows()
+    
+    if ser:
+        ser.close()
+        print("✓ Serial connection closed")
+    
     print("\n✓ Inference stopped")
 
 # ============================================================================

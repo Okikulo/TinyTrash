@@ -7,6 +7,27 @@ import numpy as np
 from PIL import Image
 import time
 import os
+import argparse
+
+# Try to import pyserial (optional for Wio Terminal communication)
+try:
+    import serial
+    SERIAL_AVAILABLE = True
+except ImportError:
+    SERIAL_AVAILABLE = False
+
+# ============================================================================
+# COMMAND LINE ARGUMENTS
+# ============================================================================
+
+parser = argparse.ArgumentParser(description='TinyTrash Inference - Photo Capture Mode')
+parser.add_argument('--serial', action='store_true', 
+                    help='Enable serial communication with Wio Terminal')
+parser.add_argument('--port', type=str, default=None,
+                    help='Serial port (e.g., COM3 on Windows, /dev/ttyACM0 on Linux)')
+parser.add_argument('--baudrate', type=int, default=115200,
+                    help='Serial baudrate (default: 115200)')
+args = parser.parse_args()
 
 # ============================================================================
 # CONFIGURATION
@@ -189,6 +210,69 @@ def display_results(frame, category, confidence, all_probs):
     return results_img
 
 # ============================================================================
+# SERIAL COMMUNICATION
+# ============================================================================
+
+def init_serial(port, baudrate):
+    """
+    Initialize serial connection to Wio Terminal
+    
+    Args:
+        port: Serial port name
+        baudrate: Baud rate
+        
+    Returns:
+        serial object or None if failed
+    """
+    if not SERIAL_AVAILABLE:
+        print("✗ pyserial not installed!")
+        print("  Install with: pip install pyserial")
+        print("  Or: python3 -m pip install pyserial")
+        return None
+    
+    if port is None:
+        print("✗ No serial port specified. Use --port argument.")
+        return None
+    
+    try:
+        ser = serial.Serial(port, baudrate, timeout=1)
+        time.sleep(2)  # Wait for Arduino to reset
+        print(f"✓ Serial connection established: {port} @ {baudrate} baud")
+        return ser
+    except serial.SerialException as e:
+        print(f"✗ Failed to open serial port {port}: {e}")
+        print("  Continuing without serial communication...")
+        return None
+    except Exception as e:
+        print(f"✗ Serial error: {e}")
+        return None
+
+
+def send_to_wio(ser, category, confidence):
+    """
+    Send classification result to Wio Terminal
+    
+    Protocol: "CATEGORY:CONFIDENCE\n"
+    Example: "GLASS:85.7\n"
+    
+    Args:
+        ser: Serial object
+        category: Predicted category name
+        confidence: Confidence value (0-1)
+    """
+    if ser is None or not ser.is_open:
+        return
+    
+    try:
+        # Format message: "CATEGORY:CONFIDENCE\n"
+        message = f"{category.upper()}:{confidence*100:.1f}\n"
+        ser.write(message.encode('utf-8'))
+        ser.flush()
+        print(f"  → Sent to Wio: {message.strip()}")
+    except Exception as e:
+        print(f"  ✗ Serial send error: {e}")
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 
@@ -200,13 +284,29 @@ def main():
     print("  'c' - Capture photo and classify")
     print("  's' - Save current result")
     print("  'q' - Quit")
+    
+    # Show serial status
+    if args.serial:
+        print(f"\nSerial: ENABLED")
+        print(f"  Port: {args.port if args.port else 'Not specified'}")
+        print(f"  Baudrate: {args.baudrate}")
+    else:
+        print(f"\nSerial: DISABLED (use --serial to enable)")
+    
     print("="*60 + "\n")
+    
+    # Initialize serial connection if requested
+    ser = None
+    if args.serial:
+        ser = init_serial(args.port, args.baudrate)
     
     # Open webcam
     cap = cv2.VideoCapture(0)
     
     if not cap.isOpened():
         print("✗ Error: Cannot open webcam")
+        if ser:
+            ser.close()
         return
     
     print("✓ Webcam opened successfully")
@@ -224,6 +324,7 @@ def main():
     last_results = None
     last_captured_frame = None
     last_category = None
+    last_confidence = None
     last_timestamp = None
     capture_count = 0
     saved_count = 0
@@ -283,6 +384,11 @@ def main():
             
             # Store category for saving
             last_category = category
+            last_confidence = confidence
+            
+            # Send to Wio Terminal if enabled
+            if ser:
+                send_to_wio(ser, category, confidence)
             
             # Print results to console
             print(f"\n--- RESULTS ---")
@@ -316,6 +422,11 @@ def main():
     # Cleanup
     cap.release()
     cv2.destroyAllWindows()
+    
+    if ser:
+        ser.close()
+        print("✓ Serial connection closed")
+    
     print(f"\n✓ Session complete!")
     print(f"  Captures: {capture_count}")
     print(f"  Saved: {saved_count}")
