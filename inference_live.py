@@ -34,18 +34,32 @@ args = parser.parse_args()
 # ============================================================================
 
 # Path to your trained model (update this!)
-MODEL_PATH = 'models/tinytrash_model_4.pth'
+MODEL_PATH = 'models/tinytrash_model_5.pth'
 
-# Class names (in alphabetical order - same as ImageFolder)
-CATEGORIES = ['glass', 'metal', 'paper', 'plastic']
+if MODEL_PATH == 'models/tinytrash_model_4.pth':    
 
-# Colors for each category (BGR format for OpenCV)
-COLORS = {
-    'glass': (255, 200, 0),      # Cyan
-    'metal': (200, 200, 200),    # Silver/Gray
-    'paper': (0, 255, 255),      # Yellow
-    'plastic': (255, 0, 0)       # Blue
-}
+    # Class names (in alphabetical order - same as ImageFolder)
+    CATEGORIES = ['glass', 'metal', 'paper', 'plastic']
+    
+    # Colors for each category (BGR format for OpenCV)
+    COLORS = {
+        'glass': (255, 200, 0),      # Cyan
+        'metal': (200, 200, 200),    # Silver/Gray
+        'paper': (0, 255, 255),      # Yellow
+        'plastic': (255, 0, 0)       # Blue
+    }
+else:
+    # Class names (in alphabetical order - same as ImageFolder)
+    CATEGORIES = ['glass', 'metal', 'others', 'paper', 'plastic']
+    
+    # Colors for each category (BGR format for OpenCV)
+    COLORS = {
+        'glass': (255, 200, 0),      # Cyan
+        'metal': (200, 200, 200),    # Silver/Gray
+        'others': (128, 128, 128),   # Dark Gray
+        'paper': (0, 255, 255),      # Yellow
+        'plastic': (255, 0, 0)       # Blue
+    }
 
 # Confidence threshold
 CONFIDENCE_THRESHOLD = 0.7  # Only show predictions above this confidence
