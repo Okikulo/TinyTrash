@@ -66,18 +66,18 @@ uv sync
 
 1. **Install PlatformIO:**
 ```bash
-   pip install platformio
+pip install platformio
 ```
 
 2. **Upload firmware:**
 ```bash
-   cd arduino
-   pio run --target upload
+cd arduino
+pio run --target upload
 ```
 
 3. **Verify upload:**
-   - LCD should show "TinyTrash Ready"
-   - Serial monitor: `pio device monitor`
+- LCD should show "TinyTrash Ready"
+- Serial monitor: `pio device monitor`
 
 ### Servo Wiring
 
