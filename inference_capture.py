@@ -34,21 +34,41 @@ args = parser.parse_args()
 # ============================================================================
 
 # Path to your trained model (update this!)
-MODEL_PATH = 'models/tinytrash_model_4.pth'
+MODEL_PATH = 'models/tinytrash_model_4_categories.pth'
 
-# Class names (in alphabetical order - same as ImageFolder)
-CATEGORIES = ['glass', 'metal', 'paper', 'plastic']
+if MODEL_PATH == 'models/tinytrash_model_4_categories.pth':    
 
-# Colors for each category (BGR format for OpenCV)
-COLORS = {
-    'glass': (255, 200, 0),      # Cyan
-    'metal': (200, 200, 200),    # Silver/Gray
-    'paper': (0, 255, 255),      # Yellow
-    'plastic': (255, 0, 0)       # Blue
-}
+    # Class names (in alphabetical order - same as ImageFolder)
+    CATEGORIES = ['glass', 'metal', 'paper', 'plastic']
+    
+    # Colors for each category (BGR format for OpenCV)
+    COLORS = {
+        'glass': (255, 200, 0),      # Cyan
+        'metal': (200, 200, 200),    # Silver/Gray
+        'paper': (0, 255, 255),      # Yellow
+        'plastic': (255, 0, 0)       # Blue
+    }
+else:
+    # Class names (in alphabetical order - same as ImageFolder)
+    CATEGORIES = ['glass', 'metal', 'others', 'paper', 'plastic']
+    
+    # Colors for each category (BGR format for OpenCV)
+    COLORS = {
+        'glass': (255, 200, 0),      # Cyan
+        'metal': (200, 200, 200),    # Silver/Gray
+        'others': (128, 128, 128),   # Dark Gray
+        'paper': (0, 255, 255),      # Yellow
+        'plastic': (255, 0, 0)       # Blue
+    }
 
 # Image size (must match training)
 IMG_SIZE = 224
+
+# Window sizes (adjust for your display)
+CAMERA_WINDOW_WIDTH = 1280   # Camera preview window width
+CAMERA_WINDOW_HEIGHT = 720   # Camera preview window height
+RESULT_WINDOW_WIDTH = 800    # Results window width
+RESULT_WINDOW_HEIGHT = 600   # Results window height
 
 # Create output directory for captured images
 os.makedirs('captures', exist_ok=True)
@@ -278,11 +298,12 @@ def send_to_wio(ser, category, confidence):
 
 def main():
     print("="*60)
-    print("TinyTrash - Photo Capture Mode")
+    print("TinyTrash - Photo Capture Mode (Combined View)")
     print("="*60)
     print("Controls:")
     print("  'c' - Capture photo and classify")
     print("  's' - Save current result")
+    print("  'f' - Toggle fullscreen (for presentations)")
     print("  'q' - Quit")
     
     # Show serial status
@@ -313,12 +334,15 @@ def main():
     print("Waiting for capture command...\n")
     
     # Set resolution to 640x480 to match training
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     
-    # Position windows side by side
-    cv2.namedWindow('Camera Preview')
-    cv2.moveWindow('Camera Preview', 50, 50)
+    # Create single window for demo
+    cv2.namedWindow('TinyTrash Demo')
+    cv2.resizeWindow('TinyTrash Demo', 1920, 1200)  # Wide window for side-by-side
+    
+    # Fullscreen toggle
+    is_fullscreen = False
     
     # Last results (for display)
     last_results = None
@@ -350,14 +374,27 @@ def main():
                    (10, display_frame.shape[0] - 15), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         
-        # Show camera preview
-        cv2.imshow('Camera Preview', display_frame)
+        # Create placeholder if no results yet
+        if last_results is None:
+            placeholder = np.zeros_like(display_frame)
+            cv2.putText(placeholder, "No classification yet", 
+                       (placeholder.shape[1]//2 - 150, placeholder.shape[0]//2),
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (128, 128, 128), 2)
+            cv2.putText(placeholder, "Press 'C' to classify", 
+                       (placeholder.shape[1]//2 - 140, placeholder.shape[0]//2 + 40),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (128, 128, 128), 1)
+            results_display = placeholder
+        else:
+            results_display = last_results
+
         
-        # Show last results if available
-        if last_results is not None:
-            cv2.namedWindow('Results')
-            cv2.moveWindow('Results', 700, 50)  # Position to the right
-            cv2.imshow('Results', last_results)
+        # Match heights but keep aspect ratio
+        if results_display.shape[0] != display_frame.shape[0]:
+            results_display = cv2.resize(results_display, 
+                                         (display_frame.shape[1], display_frame.shape[0]))
+        combined = np.hstack([display_frame, results_display])        
+        # Show combined window
+        cv2.imshow('TinyTrash Demo', combined)
         
         # Keyboard controls
         key = cv2.waitKey(1) & 0xFF
@@ -418,6 +455,16 @@ def main():
                 print(f"  Total saved: {saved_count}\n")
             else:
                 print("! No capture to save. Press 'C' first to capture an image.\n")
+        
+        elif key == ord('f'):
+            # Toggle fullscreen
+            is_fullscreen = not is_fullscreen
+            if is_fullscreen:
+                cv2.setWindowProperty('TinyTrash Demo', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+                print("✓ Fullscreen enabled (press 'F' to exit)")
+            else:
+                cv2.setWindowProperty('TinyTrash Demo', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+                print("✓ Fullscreen disabled")
     
     # Cleanup
     cap.release()

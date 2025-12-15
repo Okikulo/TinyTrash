@@ -131,19 +131,6 @@ python capture_photos.py --help
 - `SPACE` - Take photo
 - `Q` - Quit
 
-> **Work in Progress:** The "others" category helps the model distinguish waste from non-waste items, reducing false positives. This will be removed after the final demo
-
-### What to Include
-
-Capture ~150 diverse photos of:
-- Random household items (books, phones, remote controls, cups)
-- Empty backgrounds (tables, walls, floors)
-- Hands and arms (they appear during real usage)
-- Food items (fruits, vegetables, packaged food)
-- Furniture and electronics
-
----
-
 ## Extra Utilities
 
 - `converter.py` to ensure all the photos are in the a compatible format (JPG,JPEG,jpg,jpeg).

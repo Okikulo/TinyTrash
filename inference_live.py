@@ -34,9 +34,9 @@ args = parser.parse_args()
 # ============================================================================
 
 # Path to your trained model (update this!)
-MODEL_PATH = 'models/tinytrash_model_5.pth'
+MODEL_PATH = 'models/tinytrash_model_5_categories.pth'
 
-if MODEL_PATH == 'models/tinytrash_model_4.pth':    
+if MODEL_PATH == 'models/tinytrash_model_4_categories.pth':    
 
     # Class names (in alphabetical order - same as ImageFolder)
     CATEGORIES = ['glass', 'metal', 'paper', 'plastic']
@@ -62,7 +62,7 @@ else:
     }
 
 # Confidence threshold
-CONFIDENCE_THRESHOLD = 0.7  # Only show predictions above this confidence
+CONFIDENCE_THRESHOLD = 0.0  # Only show predictions above this confidence
 
 # Image size (must match training)
 IMG_SIZE = 224
