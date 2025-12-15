@@ -1,6 +1,14 @@
 # TinyTrash
 
-Waste classification system using computer vision and PyTorch. Classifies trash into 5 categories: glass, metal, paper, plastic and others.
+Waste classification system using computer vision, PyTorch, and embedded systems. 
+Classifies trash into 5 categories (glass, metal, paper, plastic, others) and 
+automatically opens the corresponding bin lid using servo-controlled mechanisms.
+
+**Complete system includes:**
+- ML inference on laptop (MobileNetV2)
+- Wio Terminal display and control hub
+- PCA9685 PWM servo driver
+- 4 automated trash bins with servo-actuated lids
 
 ---
 
@@ -30,6 +38,7 @@ Refer to `tinytrash.ipynb` for more information.
 
 - Python 3.8+
 - Webcam
+- PlatformIO (for Wio Terminal firmware)
 - `requirements.txt`
 
 ## Installation
@@ -51,6 +60,52 @@ source .venv/bin/activate
 # Install dependencies
 uv sync
 ```
+## Hardware Setup
+
+### Wio Terminal Firmware
+
+1. **Install PlatformIO:**
+```bash
+   pip install platformio
+```
+
+2. **Upload firmware:**
+```bash
+   cd arduino
+   pio run --target upload
+```
+
+3. **Verify upload:**
+   - LCD should show "TinyTrash Ready"
+   - Serial monitor: `pio device monitor`
+
+### Servo Wiring
+
+**PCA9685 to Wio Terminal:**
+- SDA → Wio Terminal SDA pin
+- SCL → Wio Terminal SCL pin
+- VCC → 5V
+- GND → GND
+
+**Servos to PCA9685:**
+- Channel 0: Paper bin servo
+- Channel 1: Metal bin servo
+- Channel 2: Glass bin servo
+- Channel 3: Plastic bin servo
+
+**Power:**
+- Servos require external 5V power supply (2A+)
+- Connect to PCA9685 V+ and GND terminals
+- **Do not power servos from Wio Terminal!**
+
+### Mechanical Setup
+
+Each trash bin requires:
+- Hinged lid mechanism
+- Servo horn attached to lid linkage
+- 0° = closed, 90° = open
+- Secure servo mounting to prevent vibration
+
 ## Usage
 
 #### Live Mode (`inference_live.py`)
@@ -96,6 +151,7 @@ python inference_capture.py --serial --port COM3
 - `c` - Capture photo and classify
 - `s` - Save current classification
 - `q` - Quit
+- `f` - Toggle fullscreen (perfect for demos!)
 
 ### Command-Line Options
 
@@ -130,6 +186,24 @@ python capture_photos.py --help
 ### Controls
 - `SPACE` - Take photo
 - `Q` - Quit
+
+## Performance Metrics
+
+**Model Accuracy:**
+- 4-category model: ~92% validation accuracy
+- 5-category model: ~91% validation accuracy
+- Inference time: ~50-100ms 
+
+**System Response:**
+- Classification: < 100ms
+- Serial transmission: < 10ms
+- Servo actuation: ~1 second (0° → 90°)
+- Total time: ~1.5 seconds (capture to bin open)
+
+**Tested on:**
+- Laptop: NVIDIA 4060 laptop GPU / AMD Ryzen 9 CPU inference
+- Wio Terminal: SAMD51 @ 120MHz
+- Dataset: 1000 images across 5 categories
 
 ## Extra Utilities
 
