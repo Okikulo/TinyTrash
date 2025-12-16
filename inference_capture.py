@@ -34,7 +34,7 @@ args = parser.parse_args()
 # ============================================================================
 
 # Path to your trained model (update this!)
-MODEL_PATH = 'models/tinytrash_model_4_categories.pth'
+MODEL_PATH = 'models/tinytrash_model_5_categories.pth'
 
 if MODEL_PATH == 'models/tinytrash_model_4_categories.pth':    
 

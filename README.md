@@ -27,6 +27,16 @@ Refer to `tinytrash.ipynb` for more information.
 
 ---
 
+## Dataset
+
+Download from [GitHub Releases](https://github.com/Okikulo/TinyTrash/releases/latest)
+```bash
+# Download and extract
+wget https://github.com/Okikulo/TinyTrash/releases/download/v1.0/tinytrash_dataset.zip
+unzip tinytrash_dataset.zip
+```
+---
+
 ## Features
 
 - Real-time waste classification using webcam

@@ -147,7 +147,7 @@ void openBin(int channel, String category) {
   }
 
   // Hold open for 3 seconds
-  delay(3000);
+  delay(5000);
 
   // Close (90° → 0°)
   Serial.print("Closing ");

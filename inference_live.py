@@ -27,6 +27,8 @@ parser.add_argument('--port', type=str, default=None,
                     help='Serial port (e.g., COM3 on Windows, /dev/ttyACM0 on Linux)')
 parser.add_argument('--baudrate', type=int, default=115200,
                     help='Serial baudrate (default: 115200)')
+parser.add_argument('--interval', type=int, default=5,
+                    help='Serial update interval in seconds (default: 5)')
 args = parser.parse_args()
 
 # ============================================================================
@@ -66,6 +68,12 @@ CONFIDENCE_THRESHOLD = 0.0  # Only show predictions above this confidence
 
 # Image size (must match training)
 IMG_SIZE = 224
+
+# Window sizes
+CAMERA_WINDOW_WIDTH = 1280
+CAMERA_WINDOW_HEIGHT = 720
+RESULT_WINDOW_WIDTH = 800
+RESULT_WINDOW_HEIGHT = 600
 
 # Create output directory for screenshots
 os.makedirs('screenshots', exist_ok=True)
@@ -121,44 +129,6 @@ preprocess = transforms.Compose([
 ])
 
 # ============================================================================
-# INFERENCE FUNCTION
-# ============================================================================
-
-def predict_image(frame):
-    """
-    Run inference on a single frame
-    
-    Args:
-        frame: OpenCV BGR image
-        
-    Returns:
-        category_idx: Predicted class index
-        category_name: Predicted class name
-        confidence: Prediction confidence (0-1)
-    """
-    # Convert BGR to RGB
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-    # Convert to PIL Image
-    pil_image = Image.fromarray(rgb_frame)
-    
-    # Preprocess
-    input_tensor = preprocess(pil_image)
-    input_batch = input_tensor.unsqueeze(0).to(device)
-    
-    # Inference
-    with torch.no_grad():
-        output = model(input_batch)
-        probabilities = torch.nn.functional.softmax(output, dim=1)
-        confidence, predicted = torch.max(probabilities, 1)
-        
-        category_idx = predicted.item()
-        conf = confidence.item()
-        category_name = CATEGORIES[category_idx]
-    
-    return category_idx, category_name, conf
-
-# ============================================================================
 # SERIAL COMMUNICATION
 # ============================================================================
 
@@ -194,14 +164,79 @@ def send_to_wio(ser, category, confidence):
     Protocol: "CATEGORY:CONFIDENCE\n"
     """
     if ser is None or not ser.is_open:
-        return
+        return False
     
     try:
         message = f"{category.upper()}:{confidence*100:.1f}\n"
         ser.write(message.encode('utf-8'))
         ser.flush()
+        print(f"  → Sent to Wio: {message.strip()}")
+        return True
     except Exception as e:
-        pass  # Silent fail in live mode to avoid spam
+        print(f"  ✗ Serial send error: {e}")
+        return False
+
+# ============================================================================
+# DISPLAY FUNCTIONS
+# ============================================================================
+
+def create_results_display(prediction, confidence, probabilities, frame_shape=(480, 640, 3)):
+    """Create results display image matching camera frame size"""
+    # Create black canvas same size as camera frame
+    results_img = np.zeros(frame_shape, dtype=np.uint8)
+    
+    h, w = results_img.shape[:2]
+    
+    # Get color for current category
+    color = COLORS.get(prediction, (255, 255, 255))
+    
+    # Title
+    cv2.putText(results_img, "RESULTS", (20, 40), 
+               cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+    
+    # Main prediction
+    if confidence > CONFIDENCE_THRESHOLD:
+        label = f"{prediction.upper()}"
+        conf_text = f"{confidence*100:.1f}%"
+        
+        cv2.putText(results_img, label, (20, 110), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.8, color, 3)
+        cv2.putText(results_img, conf_text, (20, 160), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
+    else:
+        cv2.putText(results_img, "UNCERTAIN", (20, 110), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 165, 255), 3)
+        cv2.putText(results_img, f"{confidence*100:.1f}%", (20, 160), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 165, 255), 2)
+    
+    # Confidence bar
+    bar_width = int((w - 40) * confidence)
+    bar_color = color if confidence > CONFIDENCE_THRESHOLD else (100, 100, 100)
+    cv2.rectangle(results_img, (20, 180), (20 + bar_width, 200), bar_color, -1)
+    cv2.rectangle(results_img, (20, 180), (w - 20, 200), (255, 255, 255), 2)
+    
+    # All class probabilities
+    cv2.putText(results_img, "All Classes:", (20, 240), 
+               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    
+    for idx, category in enumerate(CATEGORIES):
+        prob = probabilities[idx].item()
+        y_pos = 270 + (idx * 35)
+        
+        # Category name
+        cv2.putText(results_img, f"{category.capitalize()}:", (30, y_pos), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+        
+        # Probability bar
+        bar_w = int(300 * prob)
+        cv2.rectangle(results_img, (170, y_pos - 15), (170 + bar_w, y_pos), 
+                     COLORS[category], -1)
+        
+        # Percentage
+        cv2.putText(results_img, f"{prob*100:.1f}%", (490, y_pos), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+    
+    return results_img
 
 # ============================================================================
 # MAIN LOOP
@@ -209,7 +244,7 @@ def send_to_wio(ser, category, confidence):
 
 def main():
     print("\n" + "="*60)
-    print("TinyTrash Inference - Live Mode")
+    print("TinyTrash Inference - Live Mode (Combined View)")
     print("="*60)
     print("Controls:")
     print("  'q' - Quit")
@@ -221,6 +256,7 @@ def main():
         print(f"\nSerial: ENABLED")
         print(f"  Port: {args.port if args.port else 'Not specified'}")
         print(f"  Baudrate: {args.baudrate}")
+        print(f"  Update interval: {args.interval} seconds")
     else:
         print(f"\nSerial: DISABLED (use --serial to enable)")
     
@@ -241,14 +277,23 @@ def main():
     print("✓ Webcam opened successfully")
     print("Starting inference...\n")
     
-    # Set resolution
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    # Set resolution to 640x480 to match training
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    
+    # Create single combined window
+    cv2.namedWindow('TinyTrash Live')
+    cv2.resizeWindow('TinyTrash Live', 1600, 600)
     
     # FPS calculation
     fps_start_time = time.time()
     fps_counter = 0
     fps = 0
+    
+    # Serial timing
+    last_serial_time = time.time()
+    serial_interval = args.interval  # seconds
+    next_serial_update = last_serial_time + serial_interval
     
     # Pause flag
     paused = False
@@ -256,7 +301,7 @@ def main():
     # Last prediction (for smooth display)
     last_prediction = None
     last_confidence = 0.0
-    last_probabilities = torch.zeros(len(CATEGORIES))  # Initialize probabilities
+    last_probabilities = torch.zeros(len(CATEGORIES))
     
     while True:
         if not paused:
@@ -266,7 +311,7 @@ def main():
                 print("✗ Error: Cannot read frame")
                 break
             
-            # Run inference ONCE and get all probabilities
+            # Run inference
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(rgb_frame)
             input_tensor = preprocess(pil_image)
@@ -280,11 +325,15 @@ def main():
                 category_idx = predicted.item()
                 last_confidence = confidence.item()
                 last_prediction = CATEGORIES[category_idx]
-                last_probabilities = probabilities  # Store for later use
-                
-                # Send to Wio Terminal if enabled
-                if ser:
-                    send_to_wio(ser, last_prediction, last_confidence)
+                last_probabilities = probabilities
+            
+            # Check if it's time to send serial update
+            current_time = time.time()
+            if ser and current_time >= next_serial_update:
+                print(f"\n[{time.strftime('%H:%M:%S')}] Serial Update:")
+                if send_to_wio(ser, last_prediction, last_confidence):
+                    next_serial_update = current_time + serial_interval
+                    last_serial_time = current_time
             
             # FPS calculation
             fps_counter += 1
@@ -299,75 +348,60 @@ def main():
                 break
         
         # ====================================================================
-        # DRAW ON FRAME
+        # CREATE CAMERA DISPLAY
         # ====================================================================
         
-        # Create overlay for better readability
-        overlay = frame.copy()
+        display_frame = frame.copy()
         
-        # Get color for current category
-        color = COLORS.get(last_prediction, (255, 255, 255))
+        # Add clean overlay
+        overlay = display_frame.copy()
+        cv2.rectangle(overlay, (0, display_frame.shape[0] - 60), 
+                     (display_frame.shape[1], display_frame.shape[0]), 
+                     (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.7, display_frame, 0.3, 0, display_frame)
         
-        # Draw prediction box (top section)
-        cv2.rectangle(overlay, (0, 0), (frame.shape[1], 120), (0, 0, 0), -1)
-        frame = cv2.addWeighted(overlay, 0.7, frame, 0.3, 0)
+        # FPS and status
+        status_text = "PAUSED" if paused else "LIVE"
+        status_color = (0, 0, 255) if paused else (0, 255, 0)
+        cv2.putText(display_frame, f"FPS: {fps:.1f} | {status_text}", 
+                   (10, display_frame.shape[0] - 35), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, status_color, 2)
         
-        # Draw prediction text
-        if last_confidence > CONFIDENCE_THRESHOLD:
-            # High confidence - show prediction
-            label = f"{last_prediction.upper()}"
-            conf_text = f"{last_confidence*100:.1f}%"
-            
-            cv2.putText(frame, label, (20, 50), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1.5, color, 3)
-            cv2.putText(frame, conf_text, (20, 90), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
+        # Serial countdown
+        if ser:
+            time_to_next = max(0, next_serial_update - time.time())
+            cv2.putText(display_frame, f"Next: {time_to_next:.1f}s", 
+                       (10, display_frame.shape[0] - 10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        
+        # Controls
+        cv2.putText(display_frame, "P: Pause | S: Save | Q: Quit", 
+                   (display_frame.shape[1] - 260, display_frame.shape[0] - 10), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        
+        # ====================================================================
+        # CREATE RESULTS DISPLAY
+        # ====================================================================
+        
+        if last_prediction is not None:
+            results_display = create_results_display(last_prediction, last_confidence, 
+                                                     last_probabilities, frame.shape)
         else:
-            # Low confidence - show "uncertain"
-            cv2.putText(frame, "UNCERTAIN", (20, 50), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 165, 255), 3)
-            cv2.putText(frame, f"{last_confidence*100:.1f}%", (20, 90), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 165, 255), 2)
+            # Placeholder
+            results_display = np.zeros_like(frame)
+            cv2.putText(results_display, "Processing...", 
+                       (results_display.shape[1]//2 - 100, results_display.shape[0]//2),
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (128, 128, 128), 2)
         
-        # Draw FPS
-        cv2.putText(frame, f"FPS: {fps:.1f}", (frame.shape[1]-150, 30), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        # ====================================================================
+        # COMBINE AND DISPLAY
+        # ====================================================================
         
-        # Draw status
-        if paused:
-            cv2.putText(frame, "PAUSED", (frame.shape[1]-150, 60), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # Both frames are same size (640x480), combine directly
+        combined = np.hstack([display_frame, results_display])
         
-        # Draw confidence bar
-        bar_width = int((frame.shape[1] - 40) * last_confidence)
-        bar_color = color if last_confidence > CONFIDENCE_THRESHOLD else (100, 100, 100)
-        cv2.rectangle(frame, (20, 105), (20 + bar_width, 115), bar_color, -1)
-        cv2.rectangle(frame, (20, 105), (frame.shape[1] - 20, 115), (255, 255, 255), 2)
-        
-        # Draw all class probabilities (bottom section)
-        y_offset = frame.shape[0] - 120
-        cv2.rectangle(frame, (0, y_offset), (frame.shape[1], frame.shape[0]), (0, 0, 0), -1)
-        
-        # Use the stored probabilities from the single inference run
-        for idx, category in enumerate(CATEGORIES):
-            prob = last_probabilities[idx].item()
-            y_pos = y_offset + 20 + (idx * 25)
-            
-            # Draw category name
-            cv2.putText(frame, f"{category}:", (20, y_pos), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-            
-            # Draw probability bar
-            bar_w = int(200 * prob)
-            cv2.rectangle(frame, (120, y_pos - 12), (120 + bar_w, y_pos), 
-                         COLORS[category], -1)
-            
-            # Draw percentage
-            cv2.putText(frame, f"{prob*100:.1f}%", (330, y_pos), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        
-        # Display frame
-        cv2.imshow('TinyTrash Inference', frame)
+        # Show combined window
+        cv2.imshow('TinyTrash Live', combined)
         
         # ====================================================================
         # KEYBOARD CONTROLS
@@ -381,9 +415,9 @@ def main():
             paused = not paused
             print(f"{'Paused' if paused else 'Resumed'}")
         elif key == ord('s'):
-            filename = f"./screenshots/screenshot_{int(time.time())}.jpg"
-            cv2.imwrite(filename, frame)
-            print(f"✓ Screenshot saved: {filename}")
+            timestamp = int(time.time())
+            cv2.imwrite(f"./screenshots/screenshot_{timestamp}.jpg", combined)
+            print(f"✓ Screenshot saved: screenshot_{timestamp}.jpg")
     
     # Cleanup
     cap.release()
